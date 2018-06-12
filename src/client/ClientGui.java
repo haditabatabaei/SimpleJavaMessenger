@@ -1,5 +1,7 @@
 package client;
 
+import client.clientHandlers.ClientCommandHandler;
+
 import javax.swing.*;
 import java.awt.*;
 
@@ -12,23 +14,23 @@ public class ClientGui extends Thread {
     private JLabel serverLabel;
     private JLabel messageLabel;
     private JLabel disconnectLabel;
-    protected static JTextField serverField;
-    protected static JTextField messageField;
-    protected static JButton connectButton;
-    protected static JButton sendButton;
-    protected static JButton disconnectButton;
-    protected static JTextArea textArea;
+    public static JTextField serverField;
+    public static JTextField messageField;
+    public static JButton connectButton;
+    public static JButton sendButton;
+    public static JButton disconnectButton;
+    public static JTextArea textArea;
     private JScrollPane textAreaScrollPane;
     private Dimension frameDimension;
-
-    protected static final String COMMAND_CONNECT = "connect";
-    protected static final String COMMAND_SEND = "send";
-    protected static final String COMMAND_DISCONNECT = "disconnect";
-    protected static final String COMMAND_EXPORT = "export";
-    protected static final String COMMAND_EXIT = "exit";
-    protected static final String COMMAND_REGISTER = "register";
-    protected static final String COMMAND_ABOUT = "about";
-    protected static final String COMMAND_HELP = "help";
+    public static final String COMMAND_CONNECT = "connect";
+    public static final String COMMAND_SEND = "send";
+    public static final String COMMAND_DISCONNECT = "disconnect";
+    public static final String COMMAND_EXPORT = "export";
+    public static final String COMMAND_EXIT = "exit";
+    public static final String COMMAND_REGISTER = "register";
+    public static final String COMMAND_ABOUT = "about";
+    public static final String COMMAND_HELP = "help";
+    private ClientCommandHandler clientCommandHandler;
 
     ClientGui() {
         frameStart();
@@ -50,6 +52,8 @@ public class ClientGui extends Thread {
         /*Frame starting position to set on center using relative position to null*/
         frame.setLocationRelativeTo(null);
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+
+        clientCommandHandler = new ClientCommandHandler();
     }
 
     private void northStart() {
@@ -73,6 +77,7 @@ public class ClientGui extends Thread {
 
     private void centerAndSouthStart() {
         textArea = new JTextArea();
+        textArea.setEditable(false);
         textAreaScrollPane = new JScrollPane(textArea);
 
         downPanel = new JPanel(new BorderLayout());
@@ -102,6 +107,10 @@ public class ClientGui extends Thread {
         sendButton.setActionCommand(COMMAND_SEND);
         disconnectButton.setActionCommand(COMMAND_DISCONNECT);
 
+        connectButton.addActionListener(clientCommandHandler);
+        disconnectButton.addActionListener(clientCommandHandler);
+        sendButton.addActionListener(clientCommandHandler);
+
     }
 
     private void menuBarStuff() {
@@ -125,6 +134,16 @@ public class ClientGui extends Thread {
         disconnectItem.setActionCommand(COMMAND_DISCONNECT);
         exportItem.setActionCommand(COMMAND_EXPORT);
         exitItem.setActionCommand(COMMAND_EXIT);
+
+        helpItem.addActionListener(clientCommandHandler);
+        aboutItem.addActionListener(clientCommandHandler);
+        registerItem.addActionListener(clientCommandHandler);
+        sendItem.addActionListener(clientCommandHandler);
+        connectItem.addActionListener(clientCommandHandler);
+        disconnectItem.addActionListener(clientCommandHandler);
+        exitItem.addActionListener(clientCommandHandler);
+        exportItem.addActionListener(clientCommandHandler);
+
 
         menuBar.add(fileMenu);
         menuBar.add(helpMenu);
