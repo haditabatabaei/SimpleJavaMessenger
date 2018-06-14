@@ -1,5 +1,6 @@
 package server.serverHandlers;
 
+import server.Account;
 import server.ServerGui;
 import server.ServerStart;
 
@@ -13,20 +14,31 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ServerCommandHandler implements ActionListener {
-    ServerRunnerHandler serverRunnerHandler;
-    ExecutorService executorService = Executors.newCachedThreadPool();
+    private ServerRunnerHandler serverRunnerHandler;
 
     @Override
     public void actionPerformed(ActionEvent e) {
         switch (((JButton) e.getSource()).getActionCommand()) {
             case ServerGui.COMMAND_START:
                 if (canHandlePort(getServerPort())) {
+                    ExecutorService executorService = Executors.newSingleThreadExecutor();
                     serverRunnerHandler = new ServerRunnerHandler(getServerPort());
                     executorService.execute(serverRunnerHandler);
+                    ServerGui.startButton.setEnabled(false);
+                    ServerGui.textField.setEnabled(false);
+                    ServerGui.stopButton.setEnabled(true);
                 }
                 break;
             case ServerGui.COMMAND_STOP:
-                //stop server operation;
+                serverRunnerHandler.stopServer();
+                ServerGui.stopButton.setEnabled(false);
+                ServerGui.startButton.setEnabled(true);
+                ServerGui.textField.setEnabled(true);
+                break;
+            case ServerGui.COMMAND_PRINT_ACCOUNTS:
+                for (Account account : ServerStart.accounts) {
+                    account.print();
+                }
         }
     }
 
@@ -47,10 +59,7 @@ public class ServerCommandHandler implements ActionListener {
     }
 
     private boolean canHandlePort(int inputPort) {
-        if (inputPort <= 0) {
-            ServerGui.textArea.append("zero or less than zero port or no available input.\n");
-            return false;
-        } else return inputPort <= 65000;
+        return inputPort > 0 && inputPort <= 65500;
     }
 
     class ServerRunnerHandler extends Thread implements Runnable {
@@ -61,6 +70,14 @@ public class ServerCommandHandler implements ActionListener {
         public ServerRunnerHandler(int newPort) {
             serverPort = newPort;
             executorService = Executors.newCachedThreadPool();
+        }
+
+        public void stopServer() {
+            try {
+                serverSocket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
         public void run() {
@@ -88,6 +105,8 @@ public class ServerCommandHandler implements ActionListener {
         Socket clientSocket;
         BufferedReader bufferedReader;
         BufferedWriter bufferedWriter;
+        DataInputStream dataInputStream;
+        DataOutputStream dataOutputStream;
 
         public MultiClientHandler(Socket client) {
             clientSocket = client;
@@ -95,17 +114,37 @@ public class ServerCommandHandler implements ActionListener {
 
         public void run() {
             getStreamers();
-            while (clientSocket.isConnected()) {
-                try {
-                    String line = "";
-                    String toRead = "";
+            listen();
+        }
+
+        void listen() {
+            try {
+                String line = "";
+                String toRead = "";
+                System.out.println("Going inside while socket is not closed.");
+                while (!clientSocket.isClosed()) {
                     System.out.println("Reading...");
-                    while ((line = bufferedReader.readLine()) != null) {
-                        toRead += line;
+                    toRead = dataInputStream.readUTF();
+                    System.out.println("Reading completed.");
+                    ServerGui.textArea.append(clientSocket.getInetAddress().getHostAddress() + ">" + toRead + "\n");
+                    sendToAll(toRead);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        void sendToAll(String message) {
+            for (Socket client : ServerStart.clients) {
+                if (clientSocket != client) {
+                    DataOutputStream tmpDataOutputStream;
+                    try {
+                        tmpDataOutputStream = new DataOutputStream(client.getOutputStream());
+                        tmpDataOutputStream.writeUTF(clientSocket.getInetAddress().getHostAddress() + ">" + message);
+                        tmpDataOutputStream.flush();
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
-                    ServerGui.textArea.append(clientSocket.getInetAddress().getHostAddress() + ">" + toRead);
-                } catch (IOException e) {
-                    e.printStackTrace();
                 }
             }
         }
@@ -115,6 +154,8 @@ public class ServerCommandHandler implements ActionListener {
                 ServerGui.textArea.append("Getting streamers for " + clientSocket.getInetAddress().getHostAddress() + "\nWaiting...\n");
                 bufferedReader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                 bufferedWriter = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
+                dataInputStream = new DataInputStream(clientSocket.getInputStream());
+                dataOutputStream = new DataOutputStream(clientSocket.getOutputStream());
                 ServerGui.textArea.append("Streamers ready.\n");
             } catch (IOException e) {
                 e.printStackTrace();
