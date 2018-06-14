@@ -4,6 +4,7 @@ import client.clientHandlers.ClientCommandHandler;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.ArrayList;
 
 public class ClientGui extends Thread {
     protected static JFrame frame;
@@ -20,16 +21,25 @@ public class ClientGui extends Thread {
     public static JButton sendButton;
     public static JButton disconnectButton;
     public static JTextArea textArea;
+    public static JComboBox<String> comboBox;
     private JScrollPane textAreaScrollPane;
     private Dimension frameDimension;
+
     public static final String COMMAND_CONNECT = "connect";
     public static final String COMMAND_SEND = "send";
     public static final String COMMAND_DISCONNECT = "disconnect";
     public static final String COMMAND_EXPORT = "export";
     public static final String COMMAND_EXIT = "exit";
     public static final String COMMAND_REGISTER = "register";
+    public static final String COMMAND_LOGIN = "login";
+    public static final String COMMAND_LOGOUT = "logout";
     public static final String COMMAND_ABOUT = "about";
     public static final String COMMAND_HELP = "help";
+    public static final String COMMAND_CLEAR_ALL = "clearall";
+    public static final String COMMAND_ACTIVE_FILE_CHOOSER = "activefilechooser";
+    public static final String COMMAND_CANCEL = "cancel";
+
+    public static ArrayList<String> servers;
     private ClientCommandHandler clientCommandHandler;
 
     ClientGui() {
@@ -54,6 +64,7 @@ public class ClientGui extends Thread {
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
         clientCommandHandler = new ClientCommandHandler();
+        servers = new ArrayList<>();
     }
 
     private void northStart() {
@@ -62,11 +73,12 @@ public class ClientGui extends Thread {
         messageInfoPanel = new JPanel(new BorderLayout());
 
         serverLabel = new JLabel("Server IP:");
-        serverField = new JTextField();
+        //serverField = new JTextField();
+        comboBox = new JComboBox<>();
         connectButton = new JButton("Connect");
 
         serverInfoPanel.add(serverLabel, BorderLayout.WEST);
-        serverInfoPanel.add(serverField, BorderLayout.CENTER);
+        serverInfoPanel.add(comboBox, BorderLayout.CENTER);
         serverInfoPanel.add(connectButton, BorderLayout.EAST);
 
         messageLabel = new JLabel("Message:");
@@ -96,7 +108,7 @@ public class ClientGui extends Thread {
         downPanel.add(disconnectLabel, BorderLayout.CENTER);
         downPanel.add(disconnectButton, BorderLayout.EAST);
 
-
+        comboBoxFiller();
         frame.add(topPanel, BorderLayout.NORTH);
         frame.add(textAreaScrollPane, BorderLayout.CENTER);
         frame.add(downPanel, BorderLayout.SOUTH);
@@ -111,15 +123,19 @@ public class ClientGui extends Thread {
         disconnectButton.addActionListener(clientCommandHandler);
         sendButton.addActionListener(clientCommandHandler);
 
+
     }
 
     private void menuBarStuff() {
         JMenuBar menuBar = new JMenuBar();
         JMenu fileMenu = new JMenu("File");
         JMenu helpMenu = new JMenu("Help");
+        JMenu accountMenu = new JMenu("Account");
         JMenuItem helpItem = new JMenuItem("Help");
         JMenuItem aboutItem = new JMenuItem("About");
         JMenuItem registerItem = new JMenuItem("Register");
+        JMenuItem loginItem = new JMenuItem("Log in");
+        JMenuItem logoutItem = new JMenuItem("Log out");
         JMenuItem sendItem = new JMenuItem("Send");
         JMenuItem connectItem = new JMenuItem("Connect");
         JMenuItem disconnectItem = new JMenuItem("Disconnect");
@@ -134,6 +150,8 @@ public class ClientGui extends Thread {
         disconnectItem.setActionCommand(COMMAND_DISCONNECT);
         exportItem.setActionCommand(COMMAND_EXPORT);
         exitItem.setActionCommand(COMMAND_EXIT);
+        loginItem.setActionCommand(COMMAND_LOGIN);
+        logoutItem.setActionCommand(COMMAND_LOGOUT);
 
         helpItem.addActionListener(clientCommandHandler);
         aboutItem.addActionListener(clientCommandHandler);
@@ -143,10 +161,12 @@ public class ClientGui extends Thread {
         disconnectItem.addActionListener(clientCommandHandler);
         exitItem.addActionListener(clientCommandHandler);
         exportItem.addActionListener(clientCommandHandler);
-
+        loginItem.addActionListener(clientCommandHandler);
+        logoutItem.addActionListener(clientCommandHandler);
 
         menuBar.add(fileMenu);
         menuBar.add(helpMenu);
+        menuBar.add(accountMenu);
         fileMenu.add(connectItem);
         fileMenu.add(sendItem);
         fileMenu.add(exportItem);
@@ -154,10 +174,34 @@ public class ClientGui extends Thread {
         fileMenu.add(exitItem);
         helpMenu.add(helpItem);
         helpMenu.add(aboutItem);
-        helpMenu.add(registerItem);
+        accountMenu.add(registerItem);
+        accountMenu.add(loginItem);
+        accountMenu.add(logoutItem);
 
         frame.setJMenuBar(menuBar);
     }
+
+    private void comboBoxFiller() {
+        addServerIp("127.0.0.1:8080");
+        addServerIp("192.168.89.1:8080");
+        addServerIp("138.201.143.20:8080");
+        comboBox.revalidate();
+    }
+
+    private void addServerIp(String ip) {
+        boolean canAdd = true;
+        for (String serverIp : servers)
+            if (serverIp.equals(ip)) {
+                canAdd = false;
+                break;
+            }
+
+        if (canAdd) {
+            servers.add(ip);
+            comboBox.addItem(ip);
+        }
+    }
+
 
     public void makeHidden() {
         frame.setVisible(false);
