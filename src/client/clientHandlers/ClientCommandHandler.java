@@ -1,19 +1,29 @@
 package client.clientHandlers;
 
 import client.ClientGui;
+import client.ExportFrame;
+import client.LoginFrame;
+import client.RegisterFrame;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.*;
 import java.net.Socket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 
 public class ClientCommandHandler implements ActionListener {
     private Socket socket;
     private BufferedWriter bufferedWriter;
     private BufferedReader bufferedReader;
-
+    private DataOutputStream dataOutputStream;
+    private DataInputStream dataInputStream;
+    private ReaderHandler readerHandler;
+    private ExportFrame exportFrame;
+    private RegisterFrame registerFrame;
+    private LoginFrame loginFrame;
 
     @Override
     public void actionPerformed(ActionEvent e) {
@@ -44,14 +54,27 @@ public class ClientCommandHandler implements ActionListener {
                 //helpOperation();
                 break;
             case ClientGui.COMMAND_REGISTER:
-                //registerOperation();
+                if (registerFrame == null)
+                    registerFrame = new RegisterFrame();
+                registerFrame.makeVisible();
                 break;
             case ClientGui.COMMAND_EXPORT:
-                //exportOperation();
+                exportFrame = new ExportFrame();
+                exportFrame.makeVisible();
                 break;
             case ClientGui.COMMAND_EXIT:
                 System.exit(0);
                 break;
+
+            case ClientGui.COMMAND_LOGIN:
+                if (loginFrame == null)
+                    loginFrame = new LoginFrame();
+                loginFrame.makeVisible();
+                break;
+            case ClientGui.COMMAND_LOGOUT:
+                //logout operation;
+                break;
+
         }
     }
 
@@ -59,25 +82,35 @@ public class ClientCommandHandler implements ActionListener {
         if (isValidIp()) {
             int port;
             String hostIp;
-            String serverIp = ClientGui.serverField.getText().replaceAll(" ", "");
+            String serverIp = ClientGui.comboBox.getSelectedItem().toString();
             port = Integer.parseInt(serverIp.substring(serverIp.indexOf(":") + 1));
             hostIp = serverIp.substring(0, serverIp.indexOf(":"));
             ClientGui.textArea.append("HOST IP : " + hostIp + " | PORT : " + port + "\n");
-            ClientGui.serverField.setText(hostIp + ":" + port);
-            ClientGui.serverField.setEditable(false);
+            ClientGui.comboBox.setEnabled(false);
             ClientGui.connectButton.setEnabled(false);
             try {
                 ClientGui.textArea.append("Trying to connect to server...\n");
                 socket = new Socket(hostIp, port);
                 ClientGui.textArea.append("Connected to server.\n");
                 ClientGui.textArea.append("Getting streamers...\n");
+
                 bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+                dataInputStream = new DataInputStream(socket.getInputStream());
+                dataOutputStream = new DataOutputStream(socket.getOutputStream());
+
                 ClientGui.textArea.append("Streamers ready.\n");
+                ClientGui.textArea.append("Starting reading from server thread...");
+                ExecutorService executorService = Executors.newCachedThreadPool();
+                readerHandler = new ReaderHandler();
+                ClientGui.textArea.append("Starting Thread...\n");
+                executorService.execute(readerHandler);
+                ClientGui.textArea.append("Thread apparently launched.\n");
+
             } catch (IOException e) {
-                e.printStackTrace();
+                //e.printStackTrace();
                 ClientGui.textArea.append("Some error happened. socket error.\n");
-                ClientGui.serverField.setEditable(true);
+                ClientGui.comboBox.setEnabled(true);
                 ClientGui.connectButton.setEnabled(true);
             }
         } else
@@ -87,14 +120,15 @@ public class ClientCommandHandler implements ActionListener {
     private void sendOperation() {
         try {
             if (socket.isConnected()) {
-                String clientInput = ClientGui.messageField.getText().trim();
+                String clientInput = ClientGui.messageField.getText();
+                // printWriter = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
                 if (!clientInput.isEmpty()) {
                     try {
                         System.out.println("sending message to server...");
-                        bufferedWriter.write(clientInput + "\n");
+                        dataOutputStream.writeUTF(clientInput);
+                        dataOutputStream.flush();
                         ClientGui.textArea.append("ME>" + clientInput + "\n");
-                        bufferedWriter.flush();
-                    } catch (IOException e) {
+                    } catch (Exception e) {
                         e.printStackTrace();
                         System.out.println("Some error writing to server.");
                     }
@@ -105,7 +139,6 @@ public class ClientCommandHandler implements ActionListener {
         } catch (NullPointerException npe) {
             ClientGui.textArea.append("No Socket connection to send message.\n");
         }
-
     }
 
     private void disconnectOperation() {
@@ -121,8 +154,9 @@ public class ClientCommandHandler implements ActionListener {
                     System.out.println("Closing socket...");
                     socket.close();
                     System.out.println("Socket closed.");
-                    ClientGui.serverField.setEditable(true);
+                    ClientGui.comboBox.setEnabled(true);
                     ClientGui.connectButton.setEnabled(true);
+
                 } catch (IOException e) {
                     e.printStackTrace();
                     System.out.println("Some errors happened closing streamers or socket.");
@@ -137,7 +171,7 @@ public class ClientCommandHandler implements ActionListener {
     }
 
     private boolean isValidIp() {
-        String serverInfo = ClientGui.serverField.getText().replaceAll(" ", "");
+        String serverInfo = ClientGui.comboBox.getSelectedItem().toString().replaceAll(" ", "");
 
         Pattern p = Pattern.compile("^"
                 + "(((?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{2,6}" // Domain name
@@ -153,6 +187,27 @@ public class ClientCommandHandler implements ActionListener {
             return false;
         else {
             return p.matcher(serverInfo).matches();
+        }
+    }
+
+    private void exportOperation() {
+
+    }
+
+    class ReaderHandler extends Thread implements Runnable {
+        public void run() {
+            String toRead;
+            while (true) {
+                try {
+                    toRead = dataInputStream.readUTF();
+                    ClientGui.textArea.append(toRead + "\n");
+                    sleep(1000);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 }
