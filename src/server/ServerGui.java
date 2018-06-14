@@ -11,12 +11,14 @@ public class ServerGui {
     public static JTextField textField;
     private JPanel northPanel;
     private JLabel portLabel;
-    private JButton startButton;
-    private JButton stopButton;
+    public static JButton startButton;
+    public static JButton stopButton;
+    private JButton showButton;
     private JScrollPane scrollPane;
     private JPanel southPanel;
     public static final String COMMAND_START = "start";
     public static final String COMMAND_STOP = "stop";
+    public static final String COMMAND_PRINT_ACCOUNTS = "printaccounts";
     private static ServerCommandHandler serverCommandHandler;
 
     public ServerGui() {
@@ -32,7 +34,7 @@ public class ServerGui {
         northPanel.add(startButton, BorderLayout.EAST);
 
         southPanel.add(stopButton, BorderLayout.EAST);
-
+        southPanel.add(showButton, BorderLayout.WEST);
         frame.add(northPanel, BorderLayout.NORTH);
         frame.add(scrollPane, BorderLayout.CENTER);
         frame.add(southPanel, BorderLayout.SOUTH);
@@ -65,6 +67,10 @@ public class ServerGui {
         stopButton = new JButton("Stop Server");
         stopButton.setActionCommand(COMMAND_STOP);
         stopButton.addActionListener(serverCommandHandler);
+        stopButton.setEnabled(false);
+        showButton = new JButton("Print Accounts");
+        showButton.setActionCommand(COMMAND_PRINT_ACCOUNTS);
+        showButton.addActionListener(serverCommandHandler);
     }
 
     void makeVisible() {
