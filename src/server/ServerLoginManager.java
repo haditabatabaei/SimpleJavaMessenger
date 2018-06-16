@@ -20,27 +20,33 @@ public class ServerLoginManager extends Thread implements Runnable {
         ExecutorService executorService = Executors.newCachedThreadPool();
         try {
             serverSocket = new ServerSocket(8182);
-            executorService.execute(new HandleClientLogin(serverSocket.accept()));
+            while (true) {
+                ServerGui.textArea.append("Waiting for login connection...\n");
+                Socket tmpSocket = serverSocket.accept();
+                ServerGui.textArea.append("Login connection received from " + tmpSocket.getInetAddress().getHostAddress() + "\n");
+                executorService.execute(new HandleClientLogin(tmpSocket));
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     class HandleClientLogin extends Thread implements Runnable {
-        Socket myClient;
+        Socket handleClientSocket;
 
-        public HandleClientLogin(Socket client) {
-            myClient = client;
+        public HandleClientLogin(Socket loginSocket) {
+            handleClientSocket = loginSocket;
         }
 
         public void run() {
             try {
-                DataInputStream dataInputStream = new DataInputStream(myClient.getInputStream());
-                DataOutputStream dataOutputStream = new DataOutputStream(myClient.getOutputStream());
+                DataInputStream dataInputStream = new DataInputStream(handleClientSocket.getInputStream());
+                DataOutputStream dataOutputStream = new DataOutputStream(handleClientSocket.getOutputStream());
                 String messageFromClient = dataInputStream.readUTF();
                 String username = "";
                 String password = "";
                 StringTokenizer tokenizer = new StringTokenizer(messageFromClient, "\n");
+                ServerGui.textArea.append("Extracting login message...\n");
                 while (tokenizer.hasMoreTokens()) {
                     String thisToken = tokenizer.nextToken();
                     if (thisToken.startsWith("[USERNAME]"))
@@ -48,15 +54,19 @@ public class ServerLoginManager extends Thread implements Runnable {
                     else
                         password = thisToken.substring(6);
                 }
-
+                ServerGui.textArea.append("Extracting completed.\n");
                 if (hasAccount(username, password)) {
+                    Account foundAccount = ServerStart.findAccount(username);
+                    foundAccount.setLoggedIn(true);
+                    foundAccount.setSocketIp(handleClientSocket.getInetAddress().getHostAddress());
                     dataOutputStream.writeInt(1);
+                    ServerGui.textArea.append(foundAccount.getFullName() + " Logged in.");
                 } else {
                     dataOutputStream.writeInt(-1);
                 }
                 dataOutputStream.flush();
             } catch (IOException e) {
-
+                e.printStackTrace();
             }
         }
 
@@ -64,7 +74,6 @@ public class ServerLoginManager extends Thread implements Runnable {
             for (Account account : ServerStart.accounts) {
                 if (account.getUserName().equals(username))
                     if (account.getPassword().equals(password)) {
-                        account.setLoggedIn(true);
                         return true;
                     }
             }

@@ -36,9 +36,12 @@ public class ServerCommandHandler implements ActionListener {
                 ServerGui.textField.setEnabled(true);
                 break;
             case ServerGui.COMMAND_PRINT_ACCOUNTS:
+                System.out.println("Inside print accounts.");
                 for (Account account : ServerStart.accounts) {
+                    System.out.println("Inside for print");
                     account.print();
                 }
+                break;
         }
     }
 
@@ -82,19 +85,17 @@ public class ServerCommandHandler implements ActionListener {
 
         public void run() {
             try {
-                ServerGui.textArea.append("Server has been bound.\n");
                 serverSocket = new ServerSocket(serverPort);
                 while (true) {
                     Socket tmpSocket;
-                    ServerGui.textArea.append("Waiting for connection...\n");
+                    ServerGui.textArea.append("Waiting for chat connection...\n");
                     tmpSocket = serverSocket.accept();
-                    ServerGui.textArea.append("Connection received from : " + tmpSocket.getInetAddress().getHostAddress() + "\n");
+                    ServerGui.textArea.append("Connection received from ip for chat : " + tmpSocket.getInetAddress().getHostAddress() + "\n");
                     ServerStart.clients.add(tmpSocket);
                     MultiClientHandler tmpHandler = new MultiClientHandler(tmpSocket);
                     executorService.execute(tmpHandler);
                 }
             } catch (IOException e) {
-                e.printStackTrace();
                 ServerGui.textArea.append("Something wrong with the server binding.\n");
             }
         }
@@ -107,9 +108,12 @@ public class ServerCommandHandler implements ActionListener {
         BufferedWriter bufferedWriter;
         DataInputStream dataInputStream;
         DataOutputStream dataOutputStream;
+        Account clientAccount;
 
         public MultiClientHandler(Socket client) {
             clientSocket = client;
+            clientAccount = ServerStart.findAccountBySocketIp(clientSocket.getInetAddress().getHostAddress());
+            clientAccount.setSocket(clientSocket);
         }
 
         public void run() {
@@ -121,12 +125,9 @@ public class ServerCommandHandler implements ActionListener {
             try {
                 String line = "";
                 String toRead = "";
-                System.out.println("Going inside while socket is not closed.");
                 while (!clientSocket.isClosed()) {
-                    System.out.println("Reading...");
                     toRead = dataInputStream.readUTF();
-                    System.out.println("Reading completed.");
-                    ServerGui.textArea.append(clientSocket.getInetAddress().getHostAddress() + ">" + toRead + "\n");
+                    ServerGui.textArea.append(clientAccount.getFullName() + "[" + clientSocket.getInetAddress().getHostAddress() + "]>" + toRead + "\n");
                     sendToAll(toRead);
                 }
             } catch (IOException e) {
@@ -140,7 +141,7 @@ public class ServerCommandHandler implements ActionListener {
                     DataOutputStream tmpDataOutputStream;
                     try {
                         tmpDataOutputStream = new DataOutputStream(client.getOutputStream());
-                        tmpDataOutputStream.writeUTF(clientSocket.getInetAddress().getHostAddress() + ">" + message);
+                        tmpDataOutputStream.writeUTF(clientAccount.getFullName() + ">" + message);
                         tmpDataOutputStream.flush();
                     } catch (IOException e) {
                         e.printStackTrace();

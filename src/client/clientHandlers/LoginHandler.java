@@ -17,7 +17,10 @@ public class LoginHandler implements ActionListener {
     public void actionPerformed(ActionEvent e) {
         switch (((JButton) e.getSource()).getActionCommand()) {
             case ClientGui.COMMAND_LOGIN:
-                connectAngLogin();
+                if (!ClientStart.isLoggedIn) {
+                    connectAngLogin();
+                } else
+                    JOptionPane.showMessageDialog(null, "You already logged in.", "Error", JOptionPane.WARNING_MESSAGE);
                 break;
             case ClientGui.COMMAND_CANCEL:
                 LoginFrame.frame.setVisible(false);
@@ -38,7 +41,7 @@ public class LoginHandler implements ActionListener {
         try {
             String guiUsername = LoginFrame.usernameField.getText();
             String guipass = LoginFrame.passwordField.getText();
-            Socket socket = new Socket(ClientStart.LOCAL, ClientStart.DEFAULT_PORT_LOG);
+            Socket socket = new Socket(ClientStart.DEFAULT_SERVER, ClientStart.DEFAULT_PORT_LOG);
             DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
             DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
             String toSend = "[USERNAME]" + guiUsername + "\n[PASS]" + guipass;
@@ -48,12 +51,13 @@ public class LoginHandler implements ActionListener {
             if (response == ClientStart.RESPONSE_GOOD) {
                 JOptionPane.showMessageDialog(null, "You logged in.\nThank you", "Login", JOptionPane.INFORMATION_MESSAGE);
                 ClientStart.isLoggedIn = true;
+                socket.close();
             } else if (response == ClientStart.RESPONSE_BAD_NOUSER)
                 JOptionPane.showMessageDialog(null, "Error logging in.\nSorry.\nCheck your username and password or register.", "Error", JOptionPane.WARNING_MESSAGE);
             else
                 JOptionPane.showMessageDialog(null, "Error in internet connection with server.\ncheck your connection or call us.", "Error", JOptionPane.WARNING_MESSAGE);
         } catch (IOException e) {
-            e.printStackTrace();
+            ClientGui.textArea.append("Some error happened connection to server for login\n");
         }
     }
 }

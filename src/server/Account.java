@@ -1,5 +1,7 @@
 package server;
 
+import java.net.Socket;
+
 public class Account {
     private String fullName;
     private String userName;
@@ -8,6 +10,8 @@ public class Account {
     private int age;
     private int id;
     private boolean isLoggedIn;
+    private Socket socket;
+    private String socketIp;
 
     public Account(String userName, String password, String email) {
         this.userName = userName;
@@ -23,6 +27,22 @@ public class Account {
         this.fullName = fullName;
         this.age = age;
         isLoggedIn = false;
+    }
+
+    public String getSocketIp() {
+        return socketIp;
+    }
+
+    public void setSocketIp(String socketIp) {
+        this.socketIp = socketIp;
+    }
+
+    public Socket getSocket() {
+        return socket;
+    }
+
+    public void setSocket(Socket socket) {
+        this.socket = socket;
     }
 
     public boolean isLoggedIn() {
@@ -64,7 +84,7 @@ public class Account {
 
     public String toStringForSave() {
         String toReturn;
-        toReturn = "username:" + userName + "\npassword:" + password + "\nfullname:" + fullName + "\nemail:" + email + "\nage:" + age + "\nid:" + id + "\n[END]\n";
+        toReturn = "username:" + userName + "\npassword:" + password + "\nfullname:" + fullName + "\nemail:" + email + "\nage:" + age + "\nid:" + id + "\nip:" + socketIp + "\n[END]\n";
         return toReturn;
     }
 
@@ -96,6 +116,8 @@ public class Account {
         System.out.println("|Email:" + email);
         System.out.println("|Age:" + age);
         System.out.println("|ID:" + id);
+        System.out.println("|IP:" + socketIp);
+        System.out.println("|IsOnline:" + isLoggedIn + "");
         System.out.println("+------------------------------------------------+");
     }
 }

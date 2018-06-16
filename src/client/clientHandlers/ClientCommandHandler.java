@@ -1,9 +1,6 @@
 package client.clientHandlers;
 
-import client.ClientGui;
-import client.ExportFrame;
-import client.LoginFrame;
-import client.RegisterFrame;
+import client.*;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -39,10 +36,16 @@ public class ClientCommandHandler implements ActionListener {
         }
         switch (command) {
             case ClientGui.COMMAND_CONNECT:
-                connectOperation();
+                if (ClientStart.isLoggedIn) {
+                    connectOperation();
+                }else {
+                    ClientGui.textArea.append("If you have an account, you must login first : Account > Login\n");
+                    ClientGui.textArea.append("If you do not have an account yet, register then login:\n1 - Account > Register\n2 - Account > Login\n");
+                }
                 break;
             case ClientGui.COMMAND_DISCONNECT:
                 disconnectOperation();
+                ClientStart.isLoggedIn = false;
                 break;
             case ClientGui.COMMAND_SEND:
                 sendOperation();
@@ -72,13 +75,18 @@ public class ClientCommandHandler implements ActionListener {
                 loginFrame.makeVisible();
                 break;
             case ClientGui.COMMAND_LOGOUT:
-                //logout operation;
+                logoutOperation();
                 break;
-
         }
     }
 
-    private void connectOperation() {
+    private void logoutOperation() {
+        if (ClientStart.isLoggedIn) {
+            ClientStart.isLoggedIn = false;
+        }
+    }
+
+    public void connectOperation() {
         if (isValidIp()) {
             int port;
             String hostIp;
@@ -115,6 +123,7 @@ public class ClientCommandHandler implements ActionListener {
             }
         } else
             ClientGui.textArea.append("ip is not valid.check your address again\n");
+
     }
 
     private void sendOperation() {

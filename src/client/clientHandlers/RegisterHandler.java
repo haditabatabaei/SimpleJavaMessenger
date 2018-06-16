@@ -80,7 +80,7 @@ public class RegisterHandler implements ActionListener {
             socket.close();
 
         } catch (IOException e) {
-            e.printStackTrace();
+            ClientGui.textArea.append("Some error happened connection to server for register");
         }
     }
 }

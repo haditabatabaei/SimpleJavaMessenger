@@ -22,9 +22,13 @@ public class ServerStart {
         accounts = new ArrayList<>();
         createSaveFile();
         loadAccounts();
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        ExecutorService executorService1 = Executors.newCachedThreadPool();
+        ExecutorService executorService2 = Executors.newCachedThreadPool();
         ServerAccounter serverAccounter = new ServerAccounter();
-        executorService.execute(serverAccounter);
+        ServerLoginManager serverLoginManager = new ServerLoginManager();
+        executorService1.execute(serverAccounter);
+        executorService2.execute(serverLoginManager);
+
     }
 
     private static void createSaveFile() {
@@ -59,17 +63,14 @@ public class ServerStart {
     }
 
     private static void loadAccounts() {
-        System.out.println("load accounts...");
         try {
             BufferedReader bufferedReader = new BufferedReader(new FileReader(accountsFile));
             String line;
 
-            String user = "", pass = "", email = "", fullname = "";
+            String user = "", pass = "", email = "", fullname = "", ip = "";
             int age = 0, id;
-            System.out.println("Start reading from file...");
-            String readFromFile = "";
+            ServerGui.textArea.append("Loading accounts from file...\n");
             while ((line = bufferedReader.readLine()) != null) {
-                readFromFile += line;
                 if (line.startsWith("username:")) {
                     user = line.substring(9);
                 } else if (line.startsWith("password:")) {
@@ -82,17 +83,15 @@ public class ServerStart {
                     age = Integer.parseInt(line.substring(4));
                 } else if (line.startsWith("id:")) {
                     id = Integer.parseInt(line.substring(3));
+                } else if (line.startsWith("ip:")) {
+
                 } else if (line.startsWith("[END]")) {
+                    Account tmpAccount = new Account(user, pass, email, fullname, age);
                     justAddAccount(new Account(user, pass, email, fullname, age));
-                    System.out.println("Read until that id :" + readFromFile);
-                } else {
-                    System.out.println("Inside else");
-                    break;
                 }
             }
-            System.out.println("Reading finished.");
             bufferedReader.close();
-            System.out.println("Buffer closing.");
+            ServerGui.textArea.append("Accounts loaded.\n");
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -109,5 +108,44 @@ public class ServerStart {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static Account findAccountBySocket(Socket socket) {
+        for (Account account : accounts) {
+            if (account.getSocket() == socket) {
+                return account;
+            }
+        }
+        return null;
+    }
+
+    public static Socket findSocketByAccount(Account newAccount) {
+        for (Account account : accounts) {
+            if (account == newAccount)
+                return account.getSocket();
+        }
+        return null;
+    }
+
+    public static Account findAccountByIp(String ip) {
+        for (Account account : accounts) {
+            if (account.getSocketIp().equals(ip))
+                return account;
+        }
+        return null;
+    }
+
+    public static Account findAccount(String newUsername) {
+        for (Account account : accounts)
+            if (account.getUserName().equals(newUsername))
+                return account;
+        return null;
+    }
+
+    public static Account findAccountBySocketIp(String clientSocketIp) {
+        for (Account account : accounts)
+            if (account.getSocketIp().equals(clientSocketIp))
+                return account;
+        return null;
     }
 }
